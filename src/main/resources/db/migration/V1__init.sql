@@ -12,7 +12,10 @@ CREATE TABLE kc.nodes (
     node_id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     session_id uuid NOT NULL REFERENCES APP.sessions ON DELETE CASCADE,
 
-    subtopic text NOT NULL
+    subtopic text NOT NULL,
+
+    pass_req smallint NOT NUll CONSTRAINT enforce_pass_lvl CHECK (pass_req BETWEEN 1 AND 10),
+    user_pass BOOLEAN NOT NULL
 );
 
 -- Learning Sections are under a specific Node for studies before testing
