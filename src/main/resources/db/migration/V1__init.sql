@@ -33,7 +33,7 @@ CREATE TABLE kc.questions (
 
     body text NOT NULL,
     body_format VARCHAR(32) NOT NULL DEFAULT 'MARKDOWN_LATEX',
-    type VARCHAR(32) NOT NULL,
+    type text NOT NULL, -- 'MC' or 'Written'
 
     -- MC Specific
     multi_select BOOLEAN,
@@ -52,7 +52,15 @@ CREATE TABLE kc.questions (
     CONSTRAINT mc_needs_select_mode
         CHECK (type <> 'MULTIPLE_CHOICE' OR multi_select IS NOT NULL),
     CONSTRAINT written_has_no_mc_fields
-        CHECK (type <> 'WRITTEN' or multi_select IS NULL)
+        CHECK (type <> 'WRITTEN' or multi_select IS NULL),
+
+    --Submitted Answer Forms (Written)
+    answer_written text NULL,
+    grade_written smallint NULL,
+
+    --Submitted Answer Forms (MC)
+    answer_mc text NULL, --Multi select can just concatenate answers here
+    grade_mc BOOLEAN NULL
 );
 
 -- Sample choices for MC questions
