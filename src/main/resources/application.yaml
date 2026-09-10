@@ -1,3 +1,8 @@
 spring:
+  config:
+    import: "optional:file:.env[.properties]"
   application:
     name: MyProfessor
+
+api:
+  claude_key: ${CLAUDE_KEY}
