@@ -3,6 +3,10 @@ spring:
     import: "optional:file:.env[.properties]"
   application:
     name: MyProfessor
+  datasource:
+    url: jdbc:postgresql://localhost:5432/myprofessor
+    username: gregco7
+    password: ${DB_PASSWORD:}
 
 api:
   claude_key: ${CLAUDE_KEY}
