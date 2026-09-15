@@ -1,9 +1,40 @@
 package dev.gregco7.plan;
 
-/** How app.sessions.lvl reads to Claude. */
-final class Proficiency {
+import java.util.Locale;
+
+/** How app.sessions.lvl reads — to Claude, and to whoever typed it at the prompt. */
+public final class Proficiency {
 
     private Proficiency() {}
+
+    /**
+     * Accepts the number the column stores or the word it stands for, because
+     * "competent" is what someone means and "3" is what the database wants.
+     *
+     * @throws IllegalArgumentException if it is neither, with the accepted forms
+     */
+    public static short parse(String raw) {
+        String value = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
+        return switch (value) {
+            case "1", "aware" -> 1;
+            case "2", "familiar", "working" -> 2;
+            case "3", "competent" -> 3;
+            case "4", "fluent" -> 4;
+            default -> throw new IllegalArgumentException(
+                    "proficiency must be 1-4, or one of: aware, familiar, competent, fluent "
+                            + "(got '" + raw + "')");
+        };
+    }
+
+    /** The one-word name, for reporting back what was understood. */
+    public static String label(short lvl) {
+        return switch (lvl) {
+            case 1 -> "aware";
+            case 2 -> "familiar";
+            case 3 -> "competent";
+            default -> "fluent";
+        };
+    }
 
     static String brief(short lvl) {
         return switch (lvl) {

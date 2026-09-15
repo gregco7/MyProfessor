@@ -16,6 +16,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -41,6 +42,10 @@ public class Node {
 
     @Column(name = "user_pass", nullable = false)
     private boolean userPass;
+
+    // Null until the lesson is first sat. Every attempt stamps it, passed or not.
+    @Column(name = "last_attempted_time")
+    private Instant lastAttemptedTime;
 
     @OneToMany(mappedBy = "node", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("ordinal")
@@ -72,12 +77,26 @@ public class Node {
     public String getSubtopic() { return subtopic; }
     public short getPassRequirement() { return passReq; }
     public boolean isPassed() { return userPass; }
+    public Instant getLastAttemptedTime() { return lastAttemptedTime; }
     public Set<Learn> getLearnSections() { return learnSections; }
     public Set<Question> getQuestions() { return questions; }
     public Set<Node> getPrerequisites() { return prerequisites; }
 
     public void setSession(Session session) { this.session = session; }
     public void setPassed(boolean userPass) { this.userPass = userPass; }
+
+    /**
+     * Dates this sitting of the lesson's questions and folds in the result.
+     *
+     * <p>The timestamp moves on every attempt, passed or failed — that is the
+     * whole point of recording it separately from the pass flag. The pass itself
+     * is sticky: a lesson already cleared stays cleared, so a later weaker
+     * attempt cannot re-lock the lessons that depend on it.
+     */
+    public void recordAttempt(boolean passed) {
+        this.lastAttemptedTime = Instant.now();
+        this.userPass = this.userPass || passed;
+    }
 
     /** Keeps both sides of the association in sync; the child owns the FK column. */
     public void addLearn(Learn learn) {

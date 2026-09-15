@@ -1,0 +1,4 @@
+# The shell owns the terminal; nothing should be listening on a port behind it.
+spring:
+  main:
+    web-application-type: none

@@ -19,6 +19,9 @@ target/
 *.iml
 *.ipr
 
+### My Personal Development Notes ###
+notes/
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -35,3 +38,5 @@ build/
 ### Secrets ###
 .env
 !.env.example
+logs/
+.DS_Store

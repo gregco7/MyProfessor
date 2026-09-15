@@ -19,7 +19,13 @@ import java.util.List;
 @Service
 public class ProbePlanner {
 
-    private static final int PROBE_MAX_TOKENS = 16_000;
+    /**
+     * Thinking is drawn from the same ceiling as the answer, so a budget sized
+     * for the JSON alone lets a long think starve the response — the model spends
+     * the lot reasoning and returns nothing. Unused headroom is not billed, so
+     * this is deliberately far larger than the diagnostic needs.
+     */
+    private static final int PROBE_MAX_TOKENS = 32_000;
 
     /** Enough to bracket a learner without turning the diagnostic into the course. */
     private static final int PROBE_QUESTIONS = 8;
