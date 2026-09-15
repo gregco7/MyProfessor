@@ -1,5 +1,7 @@
 package dev.gregco7.kc;
 
+import dev.gregco7.probe.Probe;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,9 +29,21 @@ public class Question {
     @Column(name = "question_id", updatable = false, nullable = false)
     private UUID questionId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "node_id", nullable = false)
+    // A question hangs off exactly one owner. Which one it is decides where it is
+    // asked: a node's questions test a lesson, a probe's questions locate the
+    // learner before any lesson is written. enforce_single_owner holds the rule.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "node_id")
     private Node node;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "probe_id")
+    private Probe probe;
+
+    // Ascending within the owner: easiest first inside a lesson, and across a
+    // probe a deliberate sweep from elementary to the far end of the topic.
+    @Column(nullable = false)
+    private short ordinal;
 
     @Column(nullable = false)
     private String body;
@@ -76,7 +90,8 @@ public class Question {
 
     protected Question() {}
 
-    private Question(String body, QuestionType type, String hint1, String hint2) {
+    private Question(short ordinal, String body, QuestionType type, String hint1, String hint2) {
+        this.ordinal = ordinal;
         this.body = body;
         this.type = type;
         this.hint1 = hint1;
@@ -89,15 +104,16 @@ public class Question {
      * constructor that can build a row the database will reject.
      */
     public static Question multipleChoice(
-            String body, String hint1, String hint2, boolean multiSelect) {
-        Question q = new Question(body, QuestionType.MULTIPLE_CHOICE, hint1, hint2);
+            short ordinal, String body, String hint1, String hint2, boolean multiSelect) {
+        Question q = new Question(ordinal, body, QuestionType.MULTIPLE_CHOICE, hint1, hint2);
         q.multiSelect = multiSelect;
         return q;
     }
 
     public static Question written(
-            String body, String hint1, String hint2, String rubric, String modelAnswer) {
-        Question q = new Question(body, QuestionType.WRITTEN, hint1, hint2);
+            short ordinal, String body, String hint1, String hint2,
+            String rubric, String modelAnswer) {
+        Question q = new Question(ordinal, body, QuestionType.WRITTEN, hint1, hint2);
         q.rubric = rubric;
         q.modelAnswer = modelAnswer;
         return q;
@@ -105,6 +121,8 @@ public class Question {
 
     public UUID getQuestionId() { return questionId; }
     public Node getNode() { return node; }
+    public Probe getProbe() { return probe; }
+    public short getOrdinal() { return ordinal; }
     public String getBody() { return body; }
     public ContentFormat getBodyFormat() { return bodyFormat; }
     public QuestionType getType() { return type; }
@@ -120,6 +138,7 @@ public class Question {
     public Set<Choice> getChoices() { return choices; }
 
     public void setNode(Node node) { this.node = node; }
+    public void setProbe(Probe probe) { this.probe = probe; }
 
     public void addChoice(Choice choice) {
         choices.add(choice);

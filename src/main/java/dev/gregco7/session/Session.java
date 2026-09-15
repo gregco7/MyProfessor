@@ -1,6 +1,7 @@
 package dev.gregco7.session;
 
 import dev.gregco7.kc.Node;
+import dev.gregco7.probe.Probe;
 import jakarta.persistence.*;
 
 import java.util.LinkedHashSet;
@@ -22,6 +23,16 @@ public class Session {
     @Column(nullable = false)
     private short lvl;
 
+    // The diagnostic this session was planned from, and the reading of the learner
+    // that came out of it. Both are null for a session planned without a probe,
+    // which is a session aimed at the topic rather than at this learner.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "probe_id")
+    private Probe probe;
+
+    @Column
+    private String assessment;
+
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Node> nodes = new LinkedHashSet<>();
 
@@ -35,7 +46,15 @@ public class Session {
     public UUID getSessionId () {return sessionId;}
     public String getTopic () {return topic;}
     public short getGoalProficiency () {return lvl;}
+    public Probe getProbe () {return probe;}
+    public String getAssessment () {return assessment;}
     public Set<Node> getNodes () {return nodes;}
+
+    /** Records what the probe showed and which probe showed it. */
+    public void recordDiagnosis(Probe probe, String assessment) {
+        this.probe = probe;
+        this.assessment = assessment;
+    }
 
     /** Keeps both sides in sync; Node owns the session_id column. */
     public void addNode(Node node) {

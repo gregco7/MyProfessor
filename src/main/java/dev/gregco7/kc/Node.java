@@ -13,6 +13,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import java.util.LinkedHashSet;
@@ -42,9 +43,11 @@ public class Node {
     private boolean userPass;
 
     @OneToMany(mappedBy = "node", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("ordinal")
     private Set<Learn> learnSections = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "node", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("ordinal")
     private Set<Question> questions = new LinkedHashSet<>();
 
     // kc.prenodes is a pure join table, so it maps as a self-referencing

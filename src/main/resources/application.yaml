@@ -10,6 +10,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-
-api:
-  claude_key: ${CLAUDE_KEY}
+  ai:
+    anthropic:
+      api-key: ${CLAUDE_KEY}
+      # Planning a lesson is a long single response; the 10 minute client default
+      # is not enough headroom once several of them run at once.
+      timeout: 20m
