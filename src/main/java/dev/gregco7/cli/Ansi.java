@@ -31,13 +31,22 @@ final class Ansi {
      * The learner's scrollback is untouched underneath and comes back on exit,
      * which is what makes this feel like entering an application rather than
      * spraying output over whatever they were doing.
+     *
+     * <p>Alternate scroll (mode 1007) is turned off at the same time, and that
+     * is not optional. While it is on — the default in most terminals — the
+     * alternate buffer makes a trackpad or wheel scroll emit cursor-key escapes
+     * and deliver them as <em>input</em>. Nothing here is reading keys, so the
+     * tty echoes them itself, and a idle scroll paints the prompt with
+     * ^[[A^[[B^[[A^[[B until the line is unusable. A program that owns the
+     * whole screen has nothing to scroll anyway.
      */
     static String enterApplicationScreen() {
-        return code("\033[?1049h\033[H\033[2J");
+        return code("\033[?1049h") + code("\033[?1007l") + code("\033[H") + code("\033[2J");
     }
 
+    /** Puts alternate scroll back before leaving, since it was not ours to turn off. */
     static String exitApplicationScreen() {
-        return code("\033[?1049l");
+        return code("\033[?1007h") + code("\033[?1049l");
     }
 
     static String clearLine() {

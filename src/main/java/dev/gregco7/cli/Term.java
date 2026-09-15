@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 /**
  * Everything the shell does to the screen and the keyboard, in one place.
@@ -19,9 +20,34 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class Term {
 
+    /**
+     * Cursor keys and their relatives, as they arrive on stdin: CSI
+     * ({@code ESC [ … }), SS3 ({@code ESC O x}), and a bare ESC.
+     *
+     * <p>Only used on the cooked fallback path. With the terminal in raw mode
+     * these are discarded a byte at a time as they are read, before anything is
+     * echoed, which is the only way to keep them off the screen entirely.
+     */
+    private static final Pattern CONTROL_SEQUENCES =
+            Pattern.compile("\033\\[[0-?]*[ -/]*[@-~]|\033O[@-~]|\033");
+
+    private static final int CTRL_C = 3;
+    private static final int CTRL_D = 4;
+    private static final int CTRL_U = 21;
+    private static final int BACKSPACE = 8;
+    private static final int DELETE = 127;
+    private static final int ESC = 27;
+
     private final PrintStream out = System.out;
     private final BufferedReader in =
             new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+
+    /** Set once, by the shell, after it has taken the terminal. */
+    private volatile boolean raw;
+
+    void setRaw(boolean raw) {
+        this.raw = raw;
+    }
 
     public void print(String text) {
         out.print(text);
@@ -40,11 +66,94 @@ public class Term {
     public String readLine(String prompt) {
         print(prompt);
         try {
-            String line = in.readLine();
-            return line == null ? null : line.strip();
+            return raw ? readLineRaw() : readLineCooked();
         }
         catch (IOException ex) {
             throw new UncheckedIOException(ex);
+        }
+    }
+
+    private String readLineCooked() throws IOException {
+        String line = in.readLine();
+        return line == null ? null : CONTROL_SEQUENCES.matcher(line).replaceAll("").strip();
+    }
+
+    /**
+     * Reads a line while the terminal is echoing nothing of its own.
+     *
+     * <p>Every character that reaches the screen is written here, so anything
+     * the terminal invents — a scroll turned into cursor keys, a stray escape
+     * from some other program — is simply dropped and never seen. Editing is
+     * deliberately minimal: backspace and kill-line. There is no history; an
+     * arrow key is swallowed rather than recalling anything, which is honest
+     * about what this does rather than appearing to offer more.
+     */
+    private String readLineRaw() throws IOException {
+        StringBuilder line = new StringBuilder();
+        while (true) {
+            int ch = in.read();
+            switch (ch) {
+                case -1, CTRL_C -> {
+                    return null;
+                }
+                case '\r', '\n' -> {
+                    blank();
+                    return line.toString().strip();
+                }
+                case CTRL_D -> {
+                    // End of input only on an empty line, as a shell does.
+                    if (line.isEmpty()) {
+                        return null;
+                    }
+                }
+                case BACKSPACE, DELETE -> {
+                    if (!line.isEmpty()) {
+                        line.setLength(line.length() - 1);
+                        // Back over the character, paint a space, back again.
+                        print("\b \b");
+                    }
+                }
+                case CTRL_U -> {
+                    print("\b \b".repeat(line.length()));
+                    line.setLength(0);
+                }
+                case ESC -> discardEscape();
+                default -> {
+                    // Printable only. Anything else is a control code nobody
+                    // typed on purpose and nothing here knows what to do with.
+                    if (ch >= 32) {
+                        line.append((char) ch);
+                        print(String.valueOf((char) ch));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Swallows the rest of an escape sequence without echoing any of it.
+     *
+     * <p>Guarded by {@code ready()} throughout: a sequence arrives as one burst,
+     * so anything still buffered belongs to it, while a lone ESC — someone
+     * actually pressing the key — leaves nothing behind and must not block
+     * waiting for a continuation that is never coming.
+     */
+    private void discardEscape() throws IOException {
+        if (!in.ready()) {
+            return;
+        }
+        int next = in.read();
+        if (next == '[') {
+            while (in.ready()) {
+                int param = in.read();
+                // A CSI ends at its final byte; the rest is parameters.
+                if (param >= '@' && param <= '~') {
+                    return;
+                }
+            }
+        }
+        else if (next == 'O' && in.ready()) {
+            in.read();
         }
     }
 
