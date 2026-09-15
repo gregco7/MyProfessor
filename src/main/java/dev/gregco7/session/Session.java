@@ -3,6 +3,9 @@ package dev.gregco7.session;
 import dev.gregco7.kc.Node;
 import dev.gregco7.probe.Probe;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -22,6 +25,12 @@ public class Session {
 
     @Column(nullable = false)
     private short lvl;
+
+    // Set by Hibernate on insert; the column also defaults in the database so a
+    // row written by hand is still dated.
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
     // The diagnostic this session was planned from, and the reading of the learner
     // that came out of it. Both are null for a session planned without a probe,
@@ -48,6 +57,7 @@ public class Session {
     public short getGoalProficiency () {return lvl;}
     public Probe getProbe () {return probe;}
     public String getAssessment () {return assessment;}
+    public Instant getCreatedAt () {return createdAt;}
     public Set<Node> getNodes () {return nodes;}
 
     /** Records what the probe showed and which probe showed it. */

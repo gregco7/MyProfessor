@@ -39,8 +39,11 @@ public class SessionPlanner {
 
     // The outline is a handful of titles; the material under one lesson is the
     // long part, and truncation there is what the two-pass split exists to avoid.
-    private static final int OUTLINE_MAX_TOKENS = 8_000;
-    private static final int DETAIL_MAX_TOKENS = 32_000;
+    // Both ceilings also have to cover thinking, which is drawn from the same
+    // budget — size one for the JSON alone and a long think returns nothing at
+    // all. Headroom that goes unused is not billed.
+    private static final int OUTLINE_MAX_TOKENS = 32_000;
+    private static final int DETAIL_MAX_TOKENS = 48_000;
 
     private static final String OUTLINE_SYSTEM = """
             You are a curriculum architect. Given a topic, a target proficiency, and a \

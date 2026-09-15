@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="LOG_FILE" value="${LOG_FILE:-logs/myprofessor.log}"/>
+    <include resource="org/springframework/boot/logging/logback/file-appender.xml"/>
+
+    <!--
+      The shell draws the screen it is sitting on, so a log line arriving while
+      the learner is halfway through a diagnostic would tear it apart. Under the
+      cli profile everything goes to the file and the shell reports the failures
+      a person needs to see itself.
+    -->
+    <springProfile name="cli">
+        <root level="WARN">
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- Serving the API, the console is where you expect to watch it. -->
+    <springProfile name="!cli">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+</configuration>

@@ -1,13 +1,10 @@
 package dev.gregco7.plan;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
 /**
- * Claude answered, but with something the session model cannot be built from.
- * That is an upstream failure rather than a bad request, so it surfaces as 502.
+ * Claude answered, but with something the session model cannot be built from —
+ * or did not answer at all. The shell catches this and reports the message to
+ * the learner; the cause is logged to the file.
  */
-@ResponseStatus(HttpStatus.BAD_GATEWAY)
 public class PlanGenerationException extends RuntimeException {
 
     public PlanGenerationException(String message) {

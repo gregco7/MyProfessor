@@ -3,6 +3,9 @@ spring:
     import: "optional:file:.env[.properties]"
   application:
     name: MyProfessor
+  main:
+    # The shell draws its own header; Spring's banner would sit on top of it.
+    banner-mode: off
   datasource:
     url: jdbc:postgresql://localhost:5432/myprofessor
     username: gregco7
@@ -16,3 +19,16 @@ spring:
       # Planning a lesson is a long single response; the 10 minute client default
       # is not enough headroom once several of them run at once.
       timeout: 20m
+
+myprofessor:
+  # Read by the planner and reported in the shell header, so what the header
+  # claims and what actually gets called can never drift apart.
+  model: claude-opus-5
+  # Where the React dashboard runs during development. The packaged build is
+  # served from the same origin and needs none of this.
+  dashboard-origins: "http://localhost:5173,http://localhost:3000"
+
+server:
+  port: 8080
+
+# Logging is configured in logback-spring.xml: file only, no console appender.
