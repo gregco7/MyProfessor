@@ -59,6 +59,9 @@ public class ProbeService {
             // Touched whether or not it was answered, so the whole graph is loaded
             // before the entity is read outside this transaction.
             question.getChoices().size();
+            // Cleared first, so a diagnostic submitted twice is read as the second
+            // sitting rather than as the two merged together.
+            question.clearAnswer();
             SubmittedAnswer answer = byQuestion.get(question.getQuestionId());
             if (answer != null) {
                 Answers.record(question, answer);

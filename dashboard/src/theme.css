@@ -1,0 +1,346 @@
+/* Tokens and prose styling carried over from the prototype unchanged. */
+:root {
+  --bg: #0a0a0a;
+  --bg2: #171717;
+  --bg3: #262626;
+  --fg: #fafafa;
+  --dim: #a1a1a1;
+  --line: #262626;
+  --line2: #525252;
+  --em: #00bb7f;
+  --em-bright: #00d294;
+  --em-pale: #5ee9b5;
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r: 10px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+a {
+  color: var(--em-bright);
+}
+a:hover {
+  color: var(--em-pale);
+}
+
+::selection {
+  background: rgba(0, 187, 127, 0.28);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+label:focus-visible {
+  outline: 2px solid var(--em);
+  outline-offset: 2px;
+}
+
+.app {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, #171717 0%, #0a0a0a 65%) no-repeat,
+    #0a0a0a;
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+/* ── prose ───────────────────────────────────────────────────────────── */
+
+.md {
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: #e4e4e4;
+}
+.md > :first-child {
+  margin-top: 0;
+}
+.md > :last-child {
+  margin-bottom: 0;
+}
+.md h1 {
+  font-family: var(--sans);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0 0 14px;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+.md h2 {
+  font-family: var(--sans);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 22px 0 10px;
+  color: var(--fg);
+}
+.md h3 {
+  font-family: var(--sans);
+  font-size: 15.5px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+  color: var(--fg);
+}
+.md p {
+  margin: 0 0 14px;
+  text-wrap: pretty;
+}
+.md ul,
+.md ol {
+  margin: 0 0 14px 20px;
+  padding: 0;
+}
+.md li {
+  margin: 5px 0;
+}
+.md code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--bg3);
+  color: var(--em-pale);
+  padding: 1.5px 5px;
+  border-radius: 4px;
+}
+.md pre {
+  background: #111;
+  border: 1px solid var(--line);
+  padding: 13px 15px;
+  border-radius: var(--r);
+  overflow: auto;
+  margin: 0 0 16px;
+}
+.md pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.md strong {
+  font-weight: 600;
+  color: var(--fg);
+}
+.md blockquote {
+  margin: 0 0 14px;
+  padding-left: 14px;
+  border-left: 2px solid var(--line2);
+  color: var(--dim);
+}
+.md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.md th,
+.md td {
+  text-align: left;
+  padding: 7px 10px 7px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+/* KaTeX: long display maths scrolls rather than bleeding out of the pane. */
+.md .katex-display {
+  margin: 16px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0 6px;
+  max-width: 100%;
+}
+.md .katex {
+  max-width: 100%;
+}
+.md .katex-display > .katex {
+  white-space: normal;
+}
+
+/* Inline variant, for a choice or a hint that is one line of prose. */
+.mdi,
+.mdi .md {
+  display: inline;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.mdi p {
+  display: inline;
+  margin: 0;
+}
+
+/* ── shared controls ─────────────────────────────────────────────────── */
+
+.btn {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 13px 24px;
+  border-radius: var(--r);
+  border: 1px solid var(--em);
+  background: rgba(0, 187, 127, 0.07);
+  color: var(--em);
+  cursor: pointer;
+  transition:
+    background 0.16s,
+    box-shadow 0.16s;
+}
+.btn:hover:not(:disabled) {
+  background: rgba(0, 187, 127, 0.15);
+  box-shadow: 0 0 28px -6px rgba(0, 187, 127, 0.6);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-quiet {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--line2);
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition:
+    color 0.16s,
+    border-color 0.16s;
+}
+.btn-quiet:hover:not(:disabled) {
+  color: var(--em);
+  border-color: var(--em);
+}
+.btn-quiet:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.card {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #131313, #0c0c0c);
+  overflow: hidden;
+}
+
+.panel {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, #16211d 0%, #0c0c0c 70%) no-repeat,
+    #0c0c0c;
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--em);
+}
+
+.meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: #a1a1a1;
+}
+
+.session-card {
+  cursor: pointer;
+  padding: 22px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #141414, #0d0d0d);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s,
+    transform 0.18s;
+}
+.session-card:hover {
+  border-color: #2f6d56;
+  box-shadow:
+    0 0 0 1px rgba(0, 187, 127, 0.18),
+    0 10px 34px -12px rgba(0, 187, 127, 0.42);
+  transform: translateY(-2px);
+}
+
+.choice {
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: var(--r);
+  font-size: 14.5px;
+  line-height: 1.55;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  transition:
+    border-color 0.16s,
+    background 0.16s;
+}
+.choice:hover {
+  border-color: #2f6d56;
+}
+
+.mapnode {
+  position: absolute;
+  border-radius: 50%;
+  padding: 0;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s,
+    border-color 0.2s;
+}
+.mapnode:not(:disabled):hover {
+  box-shadow:
+    0 0 0 7px rgba(0, 187, 127, 0.1),
+    0 0 32px 2px rgba(0, 187, 127, 0.55);
+  border-color: #5ee9b5;
+  transform: scale(1.16);
+}
+
+/* A sign of life on the planning screen. Not a progress indicator — there is
+   no job id and no progress endpoint, so anything that implied a proportion
+   would be inventing it. */
+.pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--em);
+  box-shadow: 0 0 12px var(--em);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+}

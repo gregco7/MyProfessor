@@ -145,6 +145,22 @@ public class Question {
         choice.setQuestion(this);
     }
 
+    /**
+     * Forgets whatever was given for this question last time.
+     *
+     * <p>A sitting is a sitting: a question the learner did not answer this time
+     * is unanswered, not still holding the answer they gave on a previous
+     * attempt. Without this, re-sitting a lesson and skipping a question would
+     * silently inherit the old answer, and the attempt's own score would
+     * disagree with what the review shows.
+     */
+    public void clearAnswer() {
+        this.answerWritten = null;
+        this.gradeWritten = null;
+        this.answerMc = null;
+        this.gradeMc = null;
+    }
+
     public void submitWrittenAnswer(String answer, Short grade) {
         this.answerWritten = answer;
         this.gradeWritten = grade;

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# MyProfessor launcher.
+#
+#   ./ailearn                 from the repository root
+#   ailearn                   from anywhere, once it is on PATH:
+#                               ln -s "$PWD/ailearn" /usr/local/bin/ailearn
+#
+# The jar is rebuilt only when something under src/ or pom.xml is newer than
+# it, so a normal start costs a JVM and nothing else.
+set -euo pipefail
+
+# Resolved through symlinks on purpose: installed on PATH, $0 is the symlink,
+# and taking its directory would point at /usr/local/bin rather than at the
+# project. Every path below is relative to the project, so this has to be the
+# real location of this file.
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  LINK_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [ "${SOURCE:0:1}" = "/" ] || SOURCE="$LINK_DIR/$SOURCE"
+done
+PROJECT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+cd "$PROJECT_DIR"
+
+# Read the version from the pom so the jar name never has to be kept in step here.
+VERSION="$(awk '/<artifactId>myprofessor<\/artifactId>/{f=1} f&&/<version>/{gsub(/.*<version>|<\/version>.*/,""); print; exit}' pom.xml)"
+JAR="target/myprofessor-${VERSION}.jar"
+
+if [[ ! -f "$JAR" ]] || [[ -n "$(find src pom.xml -newer "$JAR" 2>/dev/null | head -n 1)" ]]; then
+  printf 'Building MyProfessor %s...\n' "$VERSION"
+  ./mvnw -q -DskipTests package
+fi
+
+# The cli profile swaps the HTTP server for the shell.
+exec java -jar "$JAR" --spring.profiles.active=cli "$@"

@@ -33,12 +33,15 @@ class Banner {
     private final String model;
     private final String datasourceUrl;
     private final String version;
+    private final ServerAddress server;
 
     Banner(@Value("${myprofessor.model}") String model,
            @Value("${spring.datasource.url}") String datasourceUrl,
-           ObjectProvider<BuildProperties> buildProperties) {
+           ObjectProvider<BuildProperties> buildProperties,
+           ServerAddress server) {
         this.model = model;
         this.datasourceUrl = datasourceUrl;
+        this.server = server;
         // Absent when running straight from classes rather than the packaged jar.
         this.version = buildProperties.getIfAvailable() != null
                 ? buildProperties.getObject().getVersion()
@@ -51,7 +54,8 @@ class Banner {
                 "",
                 Ansi.DIM + "model" + Ansi.RESET + "   " + model,
                 Ansi.DIM + "db" + Ansi.RESET + "      " + datasourceUrl,
-                "",
+                Ansi.DIM + "web" + Ansi.RESET + "     "
+                        + (server.isReady() ? server.baseUrl() : "not started"),
         };
 
         term.blank();

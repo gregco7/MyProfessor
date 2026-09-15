@@ -1,48 +1,38 @@
 package dev.gregco7.cli;
 
-import dev.gregco7.kc.Choice;
-import dev.gregco7.kc.SubmittedAnswer;
-import dev.gregco7.kc.Node;
-import dev.gregco7.kc.Question;
-import dev.gregco7.kc.QuestionType;
-import dev.gregco7.plan.Proficiency;
 import dev.gregco7.plan.ProbePlanner;
-import dev.gregco7.plan.SessionPlanner;
+import dev.gregco7.plan.Proficiency;
 import dev.gregco7.probe.Probe;
 import dev.gregco7.probe.ProbeService;
-import dev.gregco7.session.Session;
-import dev.gregco7.session.SessionService;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
- * {@code /init_learn 'concept' 'proficiency'} — the whole path from a topic to a
- * saved session, sat at the keyboard.
+ * {@code /init_learn 'concept' 'proficiency'} — writes the diagnostic and hands
+ * it to the browser.
  *
- * <p>Claude writes a diagnostic, the learner answers it here, and the answers
- * are read before a single lesson is chosen. The diagnostic is the point: a
- * course planned without it has to start at the beginning of the topic, which
- * for most people means being taught things they already have.
+ * <p>The diagnostic is sat in the web app, as an ordinary quiz, because that is
+ * what it is: the same rows, the same shapes, the same way of answering. Putting
+ * it at a terminal prompt made it a different and worse thing — no going back to
+ * change an answer, prose typed on one line, code in the questions unreadable.
+ *
+ * <p>Everything after the hand-off happens in the browser: answering, then the
+ * planning it kicks off, then the session it lands in. The shell's part is over
+ * once the link is open, so it returns to the prompt rather than blocking on
+ * work it is no longer doing.
  */
 @Component
 class InitLearnCommand implements ShellCommand {
 
-    private static final String[] LETTERS = {"a", "b", "c", "d", "e", "f", "g", "h"};
-
     private final ProbePlanner probePlanner;
     private final ProbeService probes;
-    private final SessionPlanner planner;
-    private final SessionService sessions;
+    private final ServerAddress server;
 
-    InitLearnCommand(ProbePlanner probePlanner, ProbeService probes,
-                     SessionPlanner planner, SessionService sessions) {
+    InitLearnCommand(ProbePlanner probePlanner, ProbeService probes, ServerAddress server) {
         this.probePlanner = probePlanner;
         this.probes = probes;
-        this.planner = planner;
-        this.sessions = sessions;
+        this.server = server;
     }
 
     @Override
@@ -57,7 +47,7 @@ class InitLearnCommand implements ShellCommand {
 
     @Override
     public String description() {
-        return "sit a diagnostic, then plan a session from where you actually are";
+        return "write a diagnostic and open it in the browser";
     }
 
     @Override
@@ -72,6 +62,11 @@ class InitLearnCommand implements ShellCommand {
         }
         short lvl = Proficiency.parse(args.get(1));
 
+        if (!server.isReady()) {
+            throw new IllegalStateException(
+                    "The web app is not up, so there is nowhere to send the diagnostic.");
+        }
+
         term.blank();
         term.heading("  " + concept);
         term.info("  aiming for " + Proficiency.label(lvl) + " (" + lvl + " of 4)");
@@ -81,136 +76,24 @@ class InitLearnCommand implements ShellCommand {
                 "Writing a diagnostic to find where you already stand...",
                 () -> probes.create(probePlanner.plan(concept, lvl)));
 
-        List<SubmittedAnswer> answers = sit(probe, term);
+        String url = server.probeUrl(probe.getProbeId());
 
-        Session session = term.whileWaiting(
-                "Reading your answers and planning the session...",
-                () -> {
-                    Probe sat = probes.recordAnswers(probe.getProbeId(), answers);
-                    return sessions.createFromPlan(
-                            planner.plan(concept, lvl, resolvedNodeCount(lvl), sat));
-                });
-
-        report(session, term);
-    }
-
-    /**
-     * Puts the diagnostic to the learner one question at a time.
-     *
-     * <p>Nothing is marked on screen and no correct answer is ever shown: being
-     * told the answer partway through would change what the rest of the
-     * diagnostic measures. Anything skipped is left unanswered, which the
-     * planner reads as evidence rather than treating as a gap in the data.
-     */
-    private List<SubmittedAnswer> sit(Probe probe, Term term) {
-        List<Question> questions = List.copyOf(probe.getQuestions());
-        List<SubmittedAnswer> answers = new ArrayList<>();
-
+        term.good("  Diagnostic ready — " + probe.getQuestions().size() + " questions.");
         term.blank();
-        term.heading("  DIAGNOSTIC" + Ansi.RESET + Ansi.DIM + "  " + questions.size()
-                + " questions · answer as best you can · press Enter to skip" + Ansi.RESET);
+        term.println("  " + url);
         term.blank();
 
-        for (Question question : questions) {
-            term.println("  " + Ansi.BOLD + question.getOrdinal() + "." + Ansi.RESET
-                    + " " + question.getBody());
-
-            if (question.getType() == QuestionType.WRITTEN) {
-                String written = term.readLine("     " + Ansi.DIM + "your answer ›" + Ansi.RESET + " ");
-                if (written == null) {
-                    break;
-                }
-                if (!written.isBlank()) {
-                    answers.add(new SubmittedAnswer(question.getQuestionId(), written, null));
-                }
-            }
-            else {
-                List<Choice> choices = List.copyOf(question.getChoices());
-                for (int i = 0; i < choices.size(); i++) {
-                    term.println("       " + Ansi.CYAN + LETTERS[i] + Ansi.RESET
-                            + ") " + choices.get(i).getBody());
-                }
-                boolean multi = Boolean.TRUE.equals(question.getMultiSelect());
-                String hint = multi ? "letters, comma separated" : "letter";
-                String picked = term.readLine(
-                        "     " + Ansi.DIM + hint + " ›" + Ansi.RESET + " ");
-                if (picked == null) {
-                    break;
-                }
-                List<UUID> chosen = resolve(picked, choices);
-                if (!chosen.isEmpty()) {
-                    answers.add(new SubmittedAnswer(question.getQuestionId(), null, chosen));
-                }
-            }
-            term.blank();
+        if (Browser.open(url)) {
+            term.info("  Opened in your browser. Answer it there, and the session is");
+            term.info("  planned from what it shows. That takes a few minutes.");
         }
-        return answers;
-    }
-
-    /** Maps typed letters back to choice ids, ignoring anything that is not one. */
-    private List<UUID> resolve(String typed, List<Choice> choices) {
-        List<UUID> chosen = new ArrayList<>();
-        for (String part : typed.toLowerCase().split("[,\\s]+")) {
-            for (int i = 0; i < choices.size() && i < LETTERS.length; i++) {
-                if (LETTERS[i].equals(part)) {
-                    chosen.add(choices.get(i).getChoiceId());
-                }
-            }
-        }
-        return chosen;
-    }
-
-    private void report(Session session, Term term) {
-        term.blank();
-        term.good("  Session ready.");
-        term.blank();
-
-        if (session.getAssessment() != null && !session.getAssessment().isBlank()) {
-            term.heading("  WHERE YOU STAND");
-            for (String line : wrap(session.getAssessment(), 74)) {
-                term.println("    " + line);
-            }
-            term.blank();
-        }
-
-        term.heading("  LESSONS");
-        int index = 1;
-        for (Node node : session.getNodes()) {
-            term.println("    " + Ansi.CYAN + index++ + "." + Ansi.RESET + " " + node.getSubtopic()
-                    + Ansi.DIM + "  (" + node.getLearnSections().size() + " sections, "
-                    + node.getQuestions().size() + " questions, pass "
-                    + node.getPassRequirement() + ")" + Ansi.RESET);
+        else {
+            term.warn("  Could not open a browser for you — paste the link above.");
         }
         term.blank();
-        term.info("  " + session.getSessionId());
-    }
-
-    /** Higher goal proficiency means a finer breakdown of the same topic. */
-    private static int resolvedNodeCount(short lvl) {
-        return switch (lvl) {
-            case 1 -> 3;
-            case 2 -> 5;
-            case 3 -> 7;
-            default -> 9;
-        };
-    }
-
-    private static List<String> wrap(String text, int width) {
-        List<String> lines = new ArrayList<>();
-        StringBuilder line = new StringBuilder();
-        for (String word : text.split("\\s+")) {
-            if (!line.isEmpty() && line.length() + 1 + word.length() > width) {
-                lines.add(line.toString());
-                line.setLength(0);
-            }
-            if (!line.isEmpty()) {
-                line.append(' ');
-            }
-            line.append(word);
-        }
-        if (!line.isEmpty()) {
-            lines.add(line.toString());
-        }
-        return lines;
+        // This shell is the server. Saying so here is the difference between a
+        // page that works and one that dies halfway through the diagnostic.
+        term.warn("  Keep this shell open — it is serving that page.");
+        term.info("  /sessions lists everything once the session lands.");
     }
 }

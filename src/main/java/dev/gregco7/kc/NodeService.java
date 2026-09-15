@@ -31,9 +31,13 @@ public class NodeService {
      * Records a sitting of the lesson's questions.
      *
      * <p>The attempt is dated whatever the outcome — that is the point of the
-     * timestamp. Questions the learner skipped are simply left unanswered and
-     * count against the total, since not answering is not the same as being
-     * right and the pass requirement is measured against the whole lesson.
+     * timestamp. Questions the learner skipped are left unanswered and count
+     * against the total, since not answering is not the same as being right and
+     * the pass requirement is measured against the whole lesson.
+     *
+     * <p>Every answer on the lesson is cleared first. An attempt replaces the
+     * previous one rather than being merged into it, which is what keeps the
+     * score this call returns and the answers the review shows in agreement.
      *
      * <p>Only multiple choice is marked. Written answers are stored unmarked
      * until there is a review pass to judge them, so they cannot currently count
@@ -55,6 +59,9 @@ public class NodeService {
 
         for (Question question : node.getQuestions()) {
             question.getChoices().size();
+            // Cleared before recording, so this attempt stands on its own rather
+            // than on top of whatever a previous sitting left behind.
+            question.clearAnswer();
             SubmittedAnswer answer = byQuestion.get(question.getQuestionId());
 
             boolean answered = answer != null;

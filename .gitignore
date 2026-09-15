@@ -40,3 +40,10 @@ build/
 !.env.example
 logs/
 .DS_Store
+
+# Dashboard: source lives in dashboard/, the build output does not.
+# `cd dashboard && npm run build` writes into src/main/resources/static,
+# where Spring serves it from. Rebuild it rather than committing it.
+dashboard/node_modules/
+dashboard/*.tsbuildinfo
+src/main/resources/static/
