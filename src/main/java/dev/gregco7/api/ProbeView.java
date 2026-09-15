@@ -1,6 +1,7 @@
 package dev.gregco7.api;
 
 import dev.gregco7.kc.Question;
+import dev.gregco7.plan.Proficiency;
 import dev.gregco7.kc.QuestionType;
 import dev.gregco7.probe.Probe;
 
@@ -15,7 +16,8 @@ import java.util.UUID;
  * none of them are sent — a diagnostic that ships its own answer key, or that
  * offers a nudge, measures the key or the nudge rather than the learner.
  */
-public record ProbeView(UUID probeId, String topic, short lvl, List<Q> questions) {
+public record ProbeView(
+        UUID probeId, String topic, short lvl, String proficiency, List<Q> questions) {
 
     /** @param multiSelect null for a written question; the client needs it to know the input shape */
     public record Q(UUID questionId, short ordinal, QuestionType type, String body,
@@ -26,6 +28,7 @@ public record ProbeView(UUID probeId, String topic, short lvl, List<Q> questions
     public static ProbeView of(Probe probe) {
         return new ProbeView(
                 probe.getProbeId(), probe.getTopic(), probe.getGoalProficiency(),
+                Proficiency.label(probe.getGoalProficiency()),
                 probe.getQuestions().stream().map(ProbeView::question).toList());
     }
 

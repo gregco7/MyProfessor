@@ -2,22 +2,30 @@ package dev.gregco7.api;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
+
+import java.io.IOException;
 
 /**
  * What the React dashboard needs from the server besides the API itself.
  *
  * <p>Two arrangements are supported and they need different things. In
- * development the dashboard runs on its own dev server on another port, which
- * makes every call cross-origin — hence the CORS rule, listing exactly the
- * origins in {@code myprofessor.dashboard-origins}. In production the built
- * dashboard is copied into {@code src/main/resources/static} and served from
- * this same origin, where CORS does not apply at all.
+ * development the dashboard runs on its own dev server, which proxies /api here
+ * — same-origin, so CORS does not come into it. The CORS rule exists for the
+ * case where someone points a dev server straight at this port instead. In
+ * production the built bundle is written into {@code src/main/resources/static}
+ * by {@code npm run build} and served from this origin.
  */
 @Configuration
 class DashboardWebConfig implements WebMvcConfigurer {
+
+    private static final String STATIC_ROOT = "classpath:/static/";
+    private static final String ENTRY_POINT = "/static/index.html";
 
     private final String[] origins;
 
@@ -34,15 +42,42 @@ class DashboardWebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * Client-side routing means the browser can ask for /sessions/{id} directly.
-     * There is no such file, so those requests are handed the dashboard's entry
-     * point and the router sorts it out. Only paths with no dot are forwarded,
-     * which keeps real asset requests falling through to a genuine 404 instead
-     * of quietly returning HTML.
+     * Serves the bundle, and hands client-side routes to its entry point.
+     *
+     * <p>The fallback is decided by whether the file is actually there, not by
+     * the shape of the path. An earlier version matched routes by pattern and
+     * forwarded anything that looked like {@code /segment/rest}, which swallowed
+     * {@code /assets/index-abc123.js} and answered it with HTML — a 200 carrying
+     * the wrong content type, which fails only later and in the browser.
+     *
+     * <p>A request that misses and carries a file extension is left to 404
+     * honestly, so a genuinely absent asset does not come back as the app.
      */
     @Override
-    public void addViewControllers(ViewControllerRegistry registry) {
-        registry.addViewController("/{path:[^.]*}").setViewName("forward:/index.html");
-        registry.addViewController("/{path:^(?!api$)[^.]*}/**").setViewName("forward:/index.html");
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/**")
+                .addResourceLocations(STATIC_ROOT)
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver() {
+                    @Override
+                    protected Resource getResource(String resourcePath, Resource location)
+                            throws IOException {
+                        Resource requested = location.createRelative(resourcePath);
+                        if (requested.exists() && requested.isReadable()) {
+                            return requested;
+                        }
+                        if (resourcePath.startsWith("api/") || hasExtension(resourcePath)) {
+                            return null;
+                        }
+                        Resource entry = new ClassPathResource(ENTRY_POINT);
+                        return entry.exists() ? entry : null;
+                    }
+                });
+    }
+
+    /** True when the last segment looks like a file rather than a route. */
+    private static boolean hasExtension(String resourcePath) {
+        int slash = resourcePath.lastIndexOf('/');
+        return resourcePath.indexOf('.', slash + 1) >= 0;
     }
 }

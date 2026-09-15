@@ -1,4 +1,12 @@
-# The shell owns the terminal; nothing should be listening on a port behind it.
+# The shell and the web app run in one process now. /init_learn hands the
+# diagnostic to the browser, so the server has to be up for the shell to be
+# useful at all, and one process means one thing to start and one to stop.
 spring:
   main:
-    web-application-type: none
+    web-application-type: servlet
+
+server:
+  # An ephemeral port: nothing else can be holding it, and the shell opens the
+  # browser itself so nobody has to know the number. Override with --server.port
+  # if you want a fixed address to bookmark.
+  port: 0
