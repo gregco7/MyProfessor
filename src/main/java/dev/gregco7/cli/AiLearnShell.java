@@ -32,6 +32,7 @@ public class AiLearnShell implements ApplicationRunner {
 
     private final Term term;
     private final Banner banner;
+    private final TtyMode tty = new TtyMode();
     private final Map<String, ShellCommand> commands = new LinkedHashMap<>();
     private final List<ShellCommand> listed;
 
@@ -64,9 +65,19 @@ public class AiLearnShell implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         term.print(Ansi.enterApplicationScreen());
-        // Restores the screen even if the JVM is killed mid-session; without it a
-        // Ctrl-C would leave the terminal stuck in the alternate buffer.
-        Thread restore = new Thread(() -> term.print(Ansi.exitApplicationScreen()));
+        // With echo off the shell draws every character itself, which is what
+        // keeps terminal-generated escapes off the screen. Falls back to a
+        // cooked read when there is no terminal to configure, as when stdin is
+        // a pipe.
+        term.setRaw(tty.enterRaw());
+
+        // Restores both even if the JVM is killed mid-session. Without this a
+        // Ctrl-C would leave the terminal in the alternate buffer with its echo
+        // switched off, which looks like a hung shell.
+        Thread restore = new Thread(() -> {
+            tty.restore();
+            term.print(Ansi.exitApplicationScreen());
+        });
         Runtime.getRuntime().addShutdownHook(restore);
 
         try {
@@ -75,6 +86,7 @@ public class AiLearnShell implements ApplicationRunner {
         }
         finally {
             Runtime.getRuntime().removeShutdownHook(restore);
+            tty.restore();
             term.print(Ansi.exitApplicationScreen());
         }
     }
