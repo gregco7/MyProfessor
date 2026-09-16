@@ -1,5 +1,6 @@
 package dev.gregco7.api;
 
+import dev.gregco7.kc.LockedNodeException;
 import dev.gregco7.kc.NodeNotFoundException;
 import dev.gregco7.plan.PlanGenerationException;
 import dev.gregco7.probe.ProbeNotFoundException;
@@ -30,6 +31,12 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(NotAttemptedException.class)
     ProblemDetail notAttempted(NotAttemptedException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    /** The lesson was sat before the lessons it depends on were passed. */
+    @ExceptionHandler(LockedNodeException.class)
+    ProblemDetail locked(LockedNodeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 

@@ -42,10 +42,19 @@ public class NodeService {
      * <p>Only multiple choice is marked. Written answers are stored unmarked
      * until there is a review pass to judge them, so they cannot currently count
      * toward a pass — worth knowing when reading a score back.
+     *
+     * <p>A lesson whose prerequisites are unpassed is refused. The database
+     * refuses it too, and that is the enforcement; this check is here so the
+     * refusal arrives as a sentence about the lesson rather than as a trigger
+     * firing halfway through flushing the attempt.
      */
     @Transactional
     public AttemptResult attempt(UUID nodeId, List<SubmittedAnswer> answers) {
         Node node = nodes.findById(nodeId).orElseThrow(() -> new NodeNotFoundException(nodeId));
+
+        if (node.getPrerequisites().stream().anyMatch(prereq -> !prereq.isPassed())) {
+            throw new LockedNodeException(nodeId);
+        }
 
         Map<UUID, SubmittedAnswer> byQuestion = new HashMap<>();
         for (SubmittedAnswer answer : answers != null ? answers : List.<SubmittedAnswer>of()) {
