@@ -7,3 +7,31 @@
 
 A CLI first Web-App tool designed to use LLMs to help you learn
 on the edge of your current understanding.
+
+## Setup
+
+You need Java 25, Node, and a local PostgreSQL.
+
+```bash
+# 1. Database
+createdb myprofessor
+
+# 2. Secrets
+cp .env.example .env        # fill in CLAUDE_KEY and DB_PASSWORD,
+                            # and add: spring.datasource.username=<your postgres role>
+
+# 3. Dashboard bundle
+cd dashboard && npm install && npm run build && cd ..
+
+# 4. Run
+./ailearn                   # CLI + web app in one process
+```
+
+Migrations run on first start. In the shell:
+
+```
+/init_learn 'topic' 'intended proficiency' (1-4)    # proficiency: 1: aware | 2: familiar | 3: competent | 4:fluent
+/sessions
+```
+
+
